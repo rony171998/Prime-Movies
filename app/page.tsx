@@ -76,7 +76,7 @@ export default async function Home() {
                 />
               </svg>
             </span>
-            <span className="text-xl font-semibold">PrimeVision</span>
+            <span className="text-xl font-semibold">Prime Movie</span>
           </div>
 
           <nav className="space-y-6">
