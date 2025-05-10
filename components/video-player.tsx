@@ -23,6 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useContinueWatching } from "@/hooks/use-continue-watching"
+import type { Movie } from "@/lib/tmdb"
 
 export interface SubtitleTrack {
   src: string
@@ -38,6 +40,8 @@ interface VideoPlayerProps {
   className?: string
   autoPlay?: boolean
   subtitles?: SubtitleTrack[]
+  movie?: Movie
+  initialTime?: number
 }
 
 export function VideoPlayer({
@@ -47,12 +51,14 @@ export function VideoPlayer({
   className,
   autoPlay = false,
   subtitles = [],
+  movie,
+  initialTime = 0,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [currentTime, setCurrentTime] = useState(0)
+  const [currentTime, setCurrentTime] = useState(initialTime)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
@@ -64,6 +70,11 @@ export function VideoPlayer({
     subtitles.find((track) => track.default)?.srcLang || (subtitles.length > 0 ? subtitles[0].srcLang : null),
   )
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const progressSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastSavedTimeRef = useRef<number>(0)
+
+  // Get continue watching functions
+  const { addToWatchedMovies } = useContinueWatching()
 
   // Initialize video
   useEffect(() => {
@@ -72,6 +83,13 @@ export function VideoPlayer({
 
     const handleLoadedMetadata = () => {
       setDuration(video.duration)
+
+      // Set initial time if provided
+      if (initialTime > 0 && initialTime < video.duration) {
+        video.currentTime = initialTime
+        setCurrentTime(initialTime)
+        setProgress((initialTime / video.duration) * 100)
+      }
     }
 
     video.addEventListener("loadedmetadata", handleLoadedMetadata)
@@ -83,7 +101,7 @@ export function VideoPlayer({
     return () => {
       video.removeEventListener("loadedmetadata", handleLoadedMetadata)
     }
-  }, [autoPlay])
+  }, [autoPlay, initialTime])
 
   // Handle time updates
   useEffect(() => {
@@ -190,6 +208,48 @@ export function VideoPlayer({
     }
   }, [subtitlesEnabled, currentSubtitle])
 
+  // Save progress periodically if we have a movie - FIXED to prevent infinite updates
+  useEffect(() => {
+    if (!movie || !isPlaying) {
+      // Clear any existing interval when not playing
+      if (progressSaveIntervalRef.current) {
+        clearInterval(progressSaveIntervalRef.current)
+        progressSaveIntervalRef.current = null
+      }
+      return
+    }
+
+    // Save progress every 5 seconds while playing
+    progressSaveIntervalRef.current = setInterval(() => {
+      const video = videoRef.current
+      if (!video) return
+
+      // Only save if time has changed significantly (more than 1 second)
+      if (Math.abs(video.currentTime - lastSavedTimeRef.current) > 1) {
+        lastSavedTimeRef.current = video.currentTime
+        addToWatchedMovies(movie, video.currentTime, video.duration, false) // Don't auto-save to localStorage here
+      }
+    }, 5000)
+
+    // Clean up interval on unmount or when dependencies change
+    return () => {
+      if (progressSaveIntervalRef.current) {
+        clearInterval(progressSaveIntervalRef.current)
+        progressSaveIntervalRef.current = null
+      }
+    }
+  }, [movie, isPlaying, addToWatchedMovies])
+
+  // Save progress when component unmounts
+  useEffect(() => {
+    return () => {
+      if (movie && videoRef.current) {
+        // Final save on unmount
+        addToWatchedMovies(movie, videoRef.current.currentTime, videoRef.current.duration)
+      }
+    }
+  }, [movie, addToWatchedMovies])
+
   // Play/Pause toggle
   const togglePlay = () => {
     const video = videoRef.current
@@ -288,7 +348,7 @@ export function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className={cn("relative w-full aspect-video bg-black rounded-lg overflow-hidden group", className)}
+      className={cn("relative w-full aspect-video bg-black rounded-3xl overflow-hidden group", className)}
       onDoubleClick={toggleFullscreen}
     >
       {/* Video Element */}
@@ -341,7 +401,7 @@ export function VideoPlayer({
       {/* Controls Overlay */}
       <div
         className={cn(
-          "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10 transition-opacity duration-300",
+          "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 rounded-b-3xl",
           showControls ? "opacity-100" : "opacity-0",
         )}
       >
@@ -387,7 +447,7 @@ export function VideoPlayer({
               {/* Volume Slider */}
               <div
                 className={cn(
-                  "absolute bottom-full left-0 mb-2 bg-zinc-900/90 backdrop-blur-sm rounded-md p-2 transition-all duration-200",
+                  "absolute bottom-full left-0 mb-2 glass rounded-xl p-3 transition-all duration-200",
                   isVolumeSliderVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
                 )}
                 onMouseEnter={() => setIsVolumeSliderVisible(true)}

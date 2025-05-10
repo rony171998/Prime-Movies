@@ -6,7 +6,8 @@ import { useState, useEffect, useRef } from "react"
 import { Search, X, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { getImageUrl, getYearFromDate } from "@/lib/tmdb"
+import { getImageUrl, getYearFromDate, getTmdbOptions } from "@/lib/tmdb"
+import { useLanguage } from "@/contexts/language-context"
 
 interface Movie {
   id: number
@@ -27,10 +28,13 @@ interface SearchResultsProps {
 const SearchResults = ({ results, isLoading, onClose }: SearchResultsProps) => {
   if (isLoading) {
     return (
-      <div className="absolute top-full mt-2 right-0 w-96 max-w-full bg-zinc-900 rounded-lg shadow-lg p-4 z-50">
+      <div className="absolute top-full mt-2 right-0 w-96 max-w-full glass-darker rounded-2xl shadow-lg p-4 z-50">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-sm font-medium">Searching...</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white dark:hover:text-white light:hover:text-gray-800"
+          >
             <X size={18} />
           </button>
         </div>
@@ -43,10 +47,13 @@ const SearchResults = ({ results, isLoading, onClose }: SearchResultsProps) => {
 
   if (results.length === 0) {
     return (
-      <div className="absolute top-full mt-2 right-0 w-96 max-w-full bg-zinc-900 rounded-lg shadow-lg p-4 z-50">
+      <div className="absolute top-full mt-2 right-0 w-96 max-w-full glass-darker rounded-2xl shadow-lg p-4 z-50">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-sm font-medium">No results found</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white dark:hover:text-white light:hover:text-gray-800"
+          >
             <X size={18} />
           </button>
         </div>
@@ -56,10 +63,13 @@ const SearchResults = ({ results, isLoading, onClose }: SearchResultsProps) => {
   }
 
   return (
-    <div className="absolute top-full mt-2 right-0 w-96 max-w-full bg-zinc-900 rounded-lg shadow-lg p-4 z-50 max-h-[80vh] overflow-auto">
+    <div className="absolute top-full mt-2 right-0 w-96 max-w-full glass-darker rounded-2xl shadow-lg p-4 z-50 max-h-[80vh] overflow-auto">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-medium">Search Results</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-white">
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-white dark:hover:text-white light:hover:text-gray-800"
+        >
           <X size={18} />
         </button>
       </div>
@@ -68,10 +78,10 @@ const SearchResults = ({ results, isLoading, onClose }: SearchResultsProps) => {
           <Link
             href={`/watch?id=${movie.id}`}
             key={movie.id}
-            className="flex gap-3 p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+            className="flex gap-3 p-3 rounded-xl hover:glass-lighter transition-colors"
             onClick={onClose}
           >
-            <div className="w-16 h-24 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+            <div className="w-16 h-24 bg-zinc-800 dark:bg-zinc-800 light:bg-gray-200 rounded overflow-hidden flex-shrink-0">
               <Image
                 src={getImageUrl(movie.poster_path, "w200") || "/placeholder.svg?height=96&width=64"}
                 alt={movie.title}
@@ -85,7 +95,9 @@ const SearchResults = ({ results, isLoading, onClose }: SearchResultsProps) => {
               <p className="text-xs text-gray-400 mb-1">
                 {movie.release_date ? getYearFromDate(movie.release_date) : "Unknown year"}
               </p>
-              <p className="text-xs text-gray-300 line-clamp-3">{movie.overview || "No overview available"}</p>
+              <p className="text-xs text-gray-300 dark:text-gray-300 light:text-gray-600 line-clamp-3">
+                {movie.overview || "No overview available"}
+              </p>
             </div>
           </Link>
         ))}
@@ -101,6 +113,7 @@ export function MovieSearch() {
   const [isOpen, setIsOpen] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { languageCode } = useLanguage()
 
   // Handle search query
   useEffect(() => {
@@ -113,20 +126,11 @@ export function MovieSearch() {
 
       setIsLoading(true)
       try {
-        const options = {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyOTIyMDY2YWJmZDRiOTk0NmM3ZmYxOTIyYWE4YWE4MyIsIm5iZiI6MTc0NTE1ODczMC42NzgwMDAyLCJzdWIiOiI2ODA1MDI0YTZlMWE3NjllODFlZTIwYzYiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.utmv6MKXXxqkL4ih-FKV61LcXsezdSRb_fhhmXmZqO4",
-          },
-        }
-
         const response = await fetch(
           `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(
             query,
-          )}&include_adult=false&language=en-US&page=1`,
-          options,
+          )}&include_adult=false&language=${languageCode}&page=1`,
+          getTmdbOptions(languageCode),
         )
 
         if (!response.ok) {
@@ -151,7 +155,7 @@ export function MovieSearch() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [query])
+  }, [query, languageCode])
 
   // Close search results when clicking outside
   useEffect(() => {
@@ -187,7 +191,7 @@ export function MovieSearch() {
 
   return (
     <div className="relative" ref={searchRef}>
-      <div className="flex items-center bg-zinc-800 rounded-full px-3 py-1.5">
+      <div className="flex items-center glass rounded-full px-4 py-2">
         <Search size={18} className="text-gray-400 mr-2" />
         <input
           ref={inputRef}
@@ -196,10 +200,13 @@ export function MovieSearch() {
           value={query}
           onChange={handleSearchChange}
           onFocus={handleSearchFocus}
-          className="bg-transparent text-white w-full focus:outline-none text-sm"
+          className="bg-transparent text-foreground w-full focus:outline-none text-sm"
         />
         {query && (
-          <button onClick={clearSearch} className="text-gray-400 hover:text-white ml-2">
+          <button
+            onClick={clearSearch}
+            className="text-gray-400 hover:text-white dark:hover:text-white light:hover:text-gray-800 ml-2"
+          >
             <X size={16} />
           </button>
         )}

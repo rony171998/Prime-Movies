@@ -1,30 +1,54 @@
-# Recreate UI from screenshot
+# PrimeVision Movie App
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A modern movie streaming platform built with Next.js and the TMDB API.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/rony171998s-projects/v0-recreate-ui-from-screenshot)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/BArdLyyG8jj)
+## Environment Variables
 
-## Overview
+This project uses environment variables to protect sensitive information like API keys. To run the project locally, you need to set up these environment variables:
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+1. Create a `.env.local` file in the root directory of the project
+2. Add the following environment variables:
 
-## Deployment
+\`\`\`
+# TMDB API Key (server-side only)
+TMDB_API_KEY=your_tmdb_api_key_here
+\`\`\`
 
-Your project is live at:
+3. Replace `your_tmdb_api_key_here` with your actual TMDB API key
 
-**[https://vercel.com/rony171998s-projects/v0-recreate-ui-from-screenshot](https://vercel.com/rony171998s-projects/v0-recreate-ui-from-screenshot)**
+## Getting Started
 
-## Build your app
+First, install the dependencies:
 
-Continue building your app on:
+\`\`\`bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+\`\`\`
 
-**[https://v0.dev/chat/projects/BArdLyyG8jj](https://v0.dev/chat/projects/BArdLyyG8jj)**
+Then, run the development server:
 
-## How It Works
+\`\`\`bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+\`\`\`
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Features
+
+- Browse popular, top-rated, and upcoming movies
+- Watch movie trailers
+- Search for movies
+- View movie details including cast, genres, and similar movies
+- Rate movies as a guest user
+- Responsive design for all devices
+
+\`\`\`
+
+Let's update the `lib/tmdb.ts` file to separate client and server functions:
